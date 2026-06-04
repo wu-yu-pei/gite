@@ -20,6 +20,7 @@
     "ioredis": "^5.11.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.22.4",
+    "node-cron": "^4.2.1",
     "pino": "^10.3.1"
   },
   "devDependencies": {
