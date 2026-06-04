@@ -1,4 +1,4 @@
-const required = ['MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE'];
+const required = ['MYSQL_HOST', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DATABASE', 'WX_APPID', 'WX_SECRET', 'JWT_SECRET'];
 
 for (const key of required) {
   if (!process.env[key]) {
@@ -25,6 +25,16 @@ const config = {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+  },
+
+  wx: {
+    appid: process.env.WX_APPID,
+    secret: process.env.WX_SECRET,
+  },
+
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 };
 
