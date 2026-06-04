@@ -21,6 +21,7 @@ services:
       - WX_SECRET=103b94e182af8b3f63384737da2fdbe4
       - JWT_SECRET=asdnl156Decv
       - JWT_EXPIRES_IN=100d
+      - TZ=Asia/Shanghai
     command: sh -c "npm install && npx nodemon src/server.js"
     depends_on:
       mysql:
@@ -37,6 +38,8 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=root123
       - MYSQL_DATABASE=wei_gif
+      - TZ=Asia/Shanghai
+    command: --default-time-zone='+08:00'
     volumes:
       - mysql_data:/var/lib/mysql
       - ./src/db/init.sql:/docker-entrypoint-initdb.d/init.sql

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import auth from '../middlewares/auth.js';
+import auth, { optionalAuth } from '../middlewares/auth.js';
 import { query } from '../libs/db.js';
 import {
   getTodayLottery,
@@ -15,14 +15,15 @@ const router = Router();
  * GET /api/lottery
  * 获取当天活动
  */
-router.get('/api/lottery', auth, async (req, res) => {
-  const lottery = await getTodayLottery(req.user.userId);
+router.get('/api/lottery', optionalAuth, async (req, res) => {
+  const userId = req.user ? req.user.userId : null;
+  const lottery = await getTodayLottery(userId);
 
   if (!lottery) {
     return res.json({ success: true, data: null });
   }
 
-  res.json({ success: true, data: lottery });
+  res.json({ success: true, data: { ...lottery, needLogin: !req.user } });
 });
 
 /**
@@ -83,9 +84,10 @@ router.get('/api/lottery/result', auth, async (req, res) => {
   }
 
   const winners = await getResult(lottery.id);
+  const isWinner = winners.some((w) => w.userId === req.user.userId);
   res.json({
     success: true,
-    data: { lotteryId: lottery.id, status: lottery.status, drawnAt: lottery.drawn_at, winners },
+    data: { lotteryId: lottery.id, status: lottery.status, drawnAt: lottery.drawn_at, isWinner, winners },
   });
 });
 

@@ -54,10 +54,11 @@ export async function executeDraw(lotteryId) {
     const totalParticipants = allParticipants[0].total;
     logger.info({ lotteryId, totalParticipants }, '[Draw] Total participants');
 
-    // Pick random winners
+    // Pick random winners (LIMIT does not support prepared statement placeholders)
+    const winnerLimit = Number(lottery.winner_count);
     const [participants] = await conn.execute(
-      'SELECT id, user_id FROM lottery_participants WHERE lottery_id = ? ORDER BY RAND() LIMIT ?',
-      [lotteryId, lottery.winner_count]
+      `SELECT id, user_id FROM lottery_participants WHERE lottery_id = ? ORDER BY RAND() LIMIT ${winnerLimit}`,
+      [lotteryId]
     );
 
     logger.info(
