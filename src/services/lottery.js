@@ -1,5 +1,6 @@
 import { query } from '../libs/db.js';
 import { executeDraw } from './draw.js';
+import logger from '../utils/logger.js';
 
 export async function getTodayLottery(userId) {
   const [lottery] = await query(
@@ -84,7 +85,11 @@ export async function joinLottery(userId) {
       [lottery.id]
     );
     if (countRow.cnt >= lottery.max_participants) {
-      await executeDraw(lottery.id);
+      try {
+        await executeDraw(lottery.id);
+      } catch (err) {
+        logger.error({ err, lotteryId: lottery.id }, 'Full-draw trigger failed');
+      }
     }
   }
 
