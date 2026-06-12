@@ -34,45 +34,56 @@ async function getAppliedMigrations(conn) {
 export async function migrate() {
   const conn = await pool.getConnection();
   try {
-    await ensureMigrationTable(conn);
-    const applied = await getAppliedMigrations(conn);
-
-    const files = (await readdir(MIGRATIONS_DIR))
-      .filter((f) => f.endsWith('.sql'))
-      .sort();
-
-    const pending = files.filter((f) => !applied.has(f));
-
-    if (pending.length === 0) {
-      logger.info('No pending migrations');
+    const [[{ locked }]] = await conn.execute(
+      "SELECT GET_LOCK('migration_lock', 10) AS locked"
+    );
+    if (!locked) {
+      logger.info('Migration lock held by another instance, skipping');
       return;
     }
 
-    for (const file of pending) {
-      const sql = await readFile(join(MIGRATIONS_DIR, file), 'utf-8');
-      logger.info(`Running migration: ${file}`);
+    try {
+      await ensureMigrationTable(conn);
+      const applied = await getAppliedMigrations(conn);
 
-      await conn.beginTransaction();
-      try {
-        // Split by semicolon to support multiple statements
-        const statements = sql
-          .split(';')
-          .map((s) => s.trim())
-          .filter(Boolean);
+      const files = (await readdir(MIGRATIONS_DIR))
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
 
-        for (const stmt of statements) {
-          await conn.execute(stmt);
-        }
-        await conn.execute('INSERT INTO schema_migrations (name) VALUES (?)', [file]);
-        await conn.commit();
-        logger.info(`Migration applied: ${file}`);
-      } catch (err) {
-        await conn.rollback();
-        throw new Error(`Migration failed [${file}]: ${err.message}`);
+      const pending = files.filter((f) => !applied.has(f));
+
+      if (pending.length === 0) {
+        logger.info('No pending migrations');
+        return;
       }
-    }
 
-    logger.info(`Applied ${pending.length} migration(s)`);
+      for (const file of pending) {
+        const sql = await readFile(join(MIGRATIONS_DIR, file), 'utf-8');
+        logger.info(`Running migration: ${file}`);
+
+        await conn.beginTransaction();
+        try {
+          const statements = sql
+            .split(';')
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+          for (const stmt of statements) {
+            await conn.execute(stmt);
+          }
+          await conn.execute('INSERT INTO schema_migrations (name) VALUES (?)', [file]);
+          await conn.commit();
+          logger.info(`Migration applied: ${file}`);
+        } catch (err) {
+          await conn.rollback();
+          throw new Error(`Migration failed [${file}]: ${err.message}`);
+        }
+      }
+
+      logger.info(`Applied ${pending.length} migration(s)`);
+    } finally {
+      await conn.execute("SELECT RELEASE_LOCK('migration_lock')");
+    }
   } finally {
     conn.release();
   }
