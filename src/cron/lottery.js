@@ -11,7 +11,10 @@ export function startLotteryCron() {
 
       const rows = await query(
         `SELECT id, title, draw_at FROM lotteries
-         WHERE status = 'active' AND draw_mode = 'scheduled' AND draw_at <= NOW()`,
+         WHERE status = 'active'
+           AND draw_mode = 'scheduled'
+           AND draw_at <= NOW()
+           AND (end_at IS NULL OR end_at <= NOW())`,
         []
       );
 
