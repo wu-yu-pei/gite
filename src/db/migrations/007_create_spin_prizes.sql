@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS spin_prizes (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  activity_id INT UNSIGNED NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  type VARCHAR(64) NOT NULL,
+  image_url VARCHAR(512) DEFAULT NULL,
+  probability DECIMAL(8, 5) NOT NULL,
+  stock INT DEFAULT NULL,
+  sort_order INT UNSIGNED DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_activity (activity_id)
+);
