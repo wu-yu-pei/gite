@@ -1,24 +1,62 @@
 services:
-  app:
-    build: .
+  nginx:
+    image: nginx:alpine
     ports:
       - "3000:3000"
-    environment:
+    volumes:
+      - ./nginx/upstream.conf:/etc/nginx/conf.d/upstream.conf
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    restart: unless-stopped
+    depends_on:
+      - app-blue
+      - app-green
+    networks:
+      - backend
+
+  app-blue:
+    build: .
+    expose:
+      - "3000"
+    environment: &app-env
       - NODE_ENV=production
       - PORT=3000
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root123
-      - MYSQL_DATABASE=wei_gif
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - WX_APPID=wxfd9e4d0f7ffcdbf4
-      - WX_SECRET=103b94e182af8b3f63384737da2fdbe4
-      - JWT_SECRET=asdnl156Decv
-      - JWT_EXPIRES_IN=100d
+      - WX_APPID=${WX_APPID}
+      - WX_SECRET=${WX_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
       - TZ=Asia/Shanghai
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+
+  app-green:
+    build: .
+    expose:
+      - "3000"
+    environment: *app-env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
       mysql:
         condition: service_healthy
@@ -32,8 +70,8 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=root123
-      - MYSQL_DATABASE=wei_gif
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
       - TZ=Asia/Shanghai
     command: --default-time-zone='+08:00'
     volumes:
