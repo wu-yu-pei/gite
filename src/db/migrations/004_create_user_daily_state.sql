@@ -13,4 +13,4 @@ CREATE TABLE IF NOT EXISTS user_daily_state (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_user_date (user_id, date),
   CONSTRAINT fk_daily_user FOREIGN KEY (user_id) REFERENCES users(id)
-);
+)

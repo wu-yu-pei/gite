@@ -33,4 +33,4 @@ INSERT INTO prizes (name, description, image_url, type, weight, stock, sort_orde
 ('谢谢参与', '下次好运', '', 'thanks', 100, NULL, 8, 1);
 
 -- ========== 保底配置：连续10次未中奖则必中三等奖 ==========
-INSERT INTO pity_config (pity_threshold, pity_prize_id) VALUES (10, 3);
+INSERT INTO pity_config (pity_threshold, pity_prize_id) VALUES (10, 3)

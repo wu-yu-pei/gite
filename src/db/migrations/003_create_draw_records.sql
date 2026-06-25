@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS draw_records (
   INDEX idx_user_created (user_id, created_at DESC),
   CONSTRAINT fk_draw_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_draw_prize FOREIGN KEY (prize_id) REFERENCES prizes(id)
-);
+)

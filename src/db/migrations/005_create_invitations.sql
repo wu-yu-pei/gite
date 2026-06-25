@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS invitations (
   INDEX idx_inviter (inviter_id),
   CONSTRAINT fk_inv_inviter FOREIGN KEY (inviter_id) REFERENCES users(id),
   CONSTRAINT fk_inv_invitee FOREIGN KEY (invitee_id) REFERENCES users(id)
-);
+)
