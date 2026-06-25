@@ -3,15 +3,12 @@ import logger from './utils/logger.js';
 import { testConnection as testMySQL } from './libs/db.js';
 import { testConnection as testRedis } from './libs/redis.js';
 import { migrate } from './db/migrate.js';
-import { startLotteryCron } from './cron/lottery.js';
 import app from './app.js';
 
 async function start() {
   await testMySQL();
   await testRedis();
   await migrate();
-
-  startLotteryCron();
 
   app.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
