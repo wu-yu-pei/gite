@@ -28,12 +28,16 @@ router.get('/api/spin/home', optionalAuth, async (req, res) => {
     invite: { done: false, locked: true, todayInvites: 0, requiredInvites: 3, drawsEarned: 0 },
   };
 
+  let totalDraws = 0;
+
   if (userId) {
-    const [state, inviteCount, balance] = await Promise.all([
+    const [state, inviteCount, balance, [totalRow]] = await Promise.all([
       getOrCreateDailyState(userId),
       getTodayInviteCount(userId),
       getFragmentBalance(userId),
+      query(`SELECT COUNT(*) AS cnt FROM draw_records WHERE user_id = ?`, [userId]),
     ]);
+    totalDraws = totalRow.cnt;
     remaining = getRemainingDraws(state);
     fragmentBalance = balance;
     tasks = {
@@ -64,6 +68,7 @@ router.get('/api/spin/home', optionalAuth, async (req, res) => {
         sortOrder: p.sort_order,
       })),
       remainingDraws: remaining,
+      totalDraws,
       fragmentBalance,
       tasks,
     },
