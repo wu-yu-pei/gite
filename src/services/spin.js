@@ -3,6 +3,21 @@ import pool from '../libs/db.js';
 import logger from '../utils/logger.js';
 
 /**
+ * 为用户增加碎片数量（在已有事务连接上执行）。
+ * @param {import('mysql2/promise').PoolConnection} conn - 事务连接
+ * @param {number} userId
+ * @param {number} quantity - 增加的碎片数量
+ */
+async function addFragments(conn, userId, quantity) {
+  await conn.execute(
+    `INSERT INTO user_fragments (user_id, quantity)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE quantity = quantity + ?, updated_at = CURRENT_TIMESTAMP`,
+    [userId, quantity, quantity]
+  );
+}
+
+/**
  * 获取或创建用户今日的每日状态记录。
  * @param {number} userId
  * @returns {Promise<object>} user_daily_state 行
@@ -142,7 +157,7 @@ export async function executeDraw(userId) {
     );
 
     // 更新每日状态
-    const isRealWin = selectedPrize.type !== 'thanks';
+    const isRealWin = selectedPrize.type !== 'thanks' && selectedPrize.type !== 'fragment';
     const newConsecutiveLosses = isRealWin ? 0 : state.consecutive_losses + 1;
 
     await conn.execute(
@@ -153,6 +168,11 @@ export async function executeDraw(userId) {
        WHERE user_id = ? AND date = ?`,
       [newConsecutiveLosses, userId, new Date().toISOString().slice(0, 10)]
     );
+
+    // 如果中了碎片奖品，增加用户碎片数量
+    if (selectedPrize.type === 'fragment') {
+      await addFragments(conn, userId, selectedPrize.fragment_quantity);
+    }
 
     await conn.commit();
 
@@ -165,6 +185,7 @@ export async function executeDraw(userId) {
           description: selectedPrize.description,
           imageUrl: selectedPrize.image_url,
           type: selectedPrize.type,
+          fragmentQuantity: selectedPrize.type === 'fragment' ? selectedPrize.fragment_quantity : undefined,
         },
         isPity,
       },
