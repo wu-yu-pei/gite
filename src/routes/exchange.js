@@ -32,6 +32,7 @@ router.get('/api/exchange/home', optionalAuth, async (req, res) => {
         imageUrl: r.image_url,
         type: r.type,
         drawsQuantity: r.type === 'draws' ? r.draws_quantity : undefined,
+        minDraws: r.min_draws,
         fragmentCost: r.fragment_cost,
         stock: r.stock,
         sortOrder: r.sort_order,

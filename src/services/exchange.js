@@ -20,7 +20,7 @@ export async function getFragmentBalance(userId) {
  */
 export async function getActiveExchangeRewards() {
   return query(
-    `SELECT id, name, description, image_url, type, draws_quantity, fragment_cost, stock, sort_order
+    `SELECT id, name, description, image_url, type, draws_quantity, min_draws, fragment_cost, stock, sort_order
      FROM exchange_rewards
      WHERE is_active = 1
      ORDER BY sort_order`
@@ -44,6 +44,17 @@ export async function executeExchange(userId, rewardId) {
 
   if (reward.stock !== null && reward.stock <= 0) {
     return { success: false, error: '该奖励已兑完' };
+  }
+
+  // 检查抽奖次数门槛
+  if (reward.min_draws > 0) {
+    const [totalRow] = await query(
+      `SELECT COUNT(*) AS cnt FROM draw_records WHERE user_id = ?`,
+      [userId]
+    );
+    if (totalRow.cnt < reward.min_draws) {
+      return { success: false, error: `需要累计抽奖${reward.min_draws}次才可兑换，当前${totalRow.cnt}次` };
+    }
   }
 
   const balance = await getFragmentBalance(userId);
