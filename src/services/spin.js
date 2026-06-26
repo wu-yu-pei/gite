@@ -61,7 +61,7 @@ export async function getActivePrizes() {
  * 获取所有启用的奖品（包括已无库存的，用于前端展示）。
  */
 export async function getAllDisplayPrizes() {
-  return query(`SELECT id, name, description, image_url, type, sort_order FROM prizes WHERE is_active = 1 ORDER BY sort_order`);
+  return query(`SELECT id, name, description, image_url, type, fragment_quantity, sort_order FROM prizes WHERE is_active = 1 ORDER BY sort_order`);
 }
 
 /**

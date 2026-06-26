@@ -8,6 +8,7 @@ import {
   executeDraw,
 } from '../services/spin.js';
 import { completeAdTask, recordInvitation, getTodayInviteCount } from '../services/task.js';
+import { getFragmentBalance } from '../services/exchange.js';
 
 const router = Router();
 
@@ -18,10 +19,11 @@ const router = Router();
 router.get('/api/spin/home', auth, async (req, res) => {
   const userId = req.user.userId;
 
-  const [prizes, state, inviteCount] = await Promise.all([
+  const [prizes, state, inviteCount, fragmentBalance] = await Promise.all([
     getAllDisplayPrizes(),
     getOrCreateDailyState(userId),
     getTodayInviteCount(userId),
+    getFragmentBalance(userId),
   ]);
 
   const remaining = getRemainingDraws(state);
@@ -35,9 +37,11 @@ router.get('/api/spin/home', auth, async (req, res) => {
         description: p.description,
         imageUrl: p.image_url,
         type: p.type,
+        fragmentQuantity: p.type === 'fragment' ? p.fragment_quantity : undefined,
         sortOrder: p.sort_order,
       })),
       remainingDraws: remaining,
+      fragmentBalance,
       tasks: {
         ad: {
           done: !!state.ad_task_done,
