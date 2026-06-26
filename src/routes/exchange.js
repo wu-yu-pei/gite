@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import auth from '../middlewares/auth.js';
+import auth, { optionalAuth } from '../middlewares/auth.js';
 import {
   getFragmentBalance,
   getActiveExchangeRewards,
@@ -13,11 +13,11 @@ const router = Router();
  * GET /api/exchange/home
  * 兑换模块首页：碎片余额 + 可兑换奖励列表
  */
-router.get('/api/exchange/home', auth, async (req, res) => {
-  const userId = req.user.userId;
+router.get('/api/exchange/home', optionalAuth, async (req, res) => {
+  const userId = req.user?.userId;
 
   const [balance, rewards] = await Promise.all([
-    getFragmentBalance(userId),
+    userId ? getFragmentBalance(userId) : Promise.resolve(0),
     getActiveExchangeRewards(),
   ]);
 

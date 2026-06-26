@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import auth from '../middlewares/auth.js';
+import auth, { optionalAuth } from '../middlewares/auth.js';
 import { query } from '../libs/db.js';
 import {
   getOrCreateDailyState,
@@ -16,17 +16,40 @@ const router = Router();
  * GET /api/spin/home
  * 首页数据：奖品九宫格、每日状态、任务进度
  */
-router.get('/api/spin/home', auth, async (req, res) => {
-  const userId = req.user.userId;
+router.get('/api/spin/home', optionalAuth, async (req, res) => {
+  const userId = req.user?.userId;
 
-  const [prizes, state, inviteCount, fragmentBalance] = await Promise.all([
-    getAllDisplayPrizes(),
-    getOrCreateDailyState(userId),
-    getTodayInviteCount(userId),
-    getFragmentBalance(userId),
-  ]);
+  const prizes = await getAllDisplayPrizes();
 
-  const remaining = getRemainingDraws(state);
+  let remaining = 0;
+  let fragmentBalance = 0;
+  let tasks = {
+    ad: { done: false, drawsEarned: 0 },
+    invite: { done: false, locked: true, todayInvites: 0, requiredInvites: 3, drawsEarned: 0 },
+  };
+
+  if (userId) {
+    const [state, inviteCount, balance] = await Promise.all([
+      getOrCreateDailyState(userId),
+      getTodayInviteCount(userId),
+      getFragmentBalance(userId),
+    ]);
+    remaining = getRemainingDraws(state);
+    fragmentBalance = balance;
+    tasks = {
+      ad: {
+        done: !!state.ad_task_done,
+        drawsEarned: state.ad_draws_earned,
+      },
+      invite: {
+        done: !!state.invite_task_done,
+        locked: !state.ad_task_done,
+        todayInvites: inviteCount,
+        requiredInvites: 3,
+        drawsEarned: state.invite_draws_earned,
+      },
+    };
+  }
 
   res.json({
     success: true,
@@ -42,19 +65,7 @@ router.get('/api/spin/home', auth, async (req, res) => {
       })),
       remainingDraws: remaining,
       fragmentBalance,
-      tasks: {
-        ad: {
-          done: !!state.ad_task_done,
-          drawsEarned: state.ad_draws_earned,
-        },
-        invite: {
-          done: !!state.invite_task_done,
-          locked: !state.ad_task_done,
-          todayInvites: inviteCount,
-          requiredInvites: 3,
-          drawsEarned: state.invite_draws_earned,
-        },
-      },
+      tasks,
     },
   });
 });
