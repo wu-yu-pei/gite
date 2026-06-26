@@ -73,23 +73,31 @@ export async function getPityConfig() {
 }
 
 /**
+ * 获取碎片动态权重配置。
+ */
+export async function getFragmentWeightConfig() {
+  const [config] = await query(`SELECT * FROM fragment_weight_config LIMIT 1`);
+  return config || null;
+}
+
+/**
  * 根据用户累计抽奖次数动态调整碎片奖品权重。
  * 初期大碎片概率高（加成最大），随抽奖次数增加加成衰减，小碎片概率自然上升。
  *
  * @param {Array} prizes - 可用奖品列表
  * @param {number} totalDraws - 用户累计抽奖次数
+ * @param {object} weightConfig - 动态权重配置 { is_enabled, boost_max, half_life }
  * @returns {Array} 调整权重后的奖品列表（新数组，不修改原对象）
  */
-export function adjustFragmentWeights(prizes, totalDraws) {
+export function adjustFragmentWeights(prizes, totalDraws, weightConfig) {
+  if (!weightConfig || !weightConfig.is_enabled) return prizes;
+
   const fragments = prizes.filter(p => p.type === 'fragment');
   if (fragments.length === 0) return prizes;
 
   const maxQ = Math.max(...fragments.map(p => p.fragment_quantity));
-
-  // boostMax: 大碎片初始权重加成倍数（10 = 初始权重最高放大 10 倍）
-  const boostMax = 10;
-  // halfLife: 每抽多少次加成减半（50 次后大碎片加成降到约 5 倍）
-  const halfLife = 50;
+  const boostMax = Number(weightConfig.boost_max);
+  const halfLife = weightConfig.half_life;
 
   // decay: 1.0 → 0.0，控制加成衰减速度
   const decay = Math.pow(0.5, totalDraws / halfLife);
@@ -100,7 +108,7 @@ export function adjustFragmentWeights(prizes, totalDraws) {
     // ratio: 碎片大小比例，0（最小）~ 1（最大）
     const ratio = p.fragment_quantity / maxQ;
 
-    // 大碎片 (ratio≈1): boost ≈ 1 + (boostMax-1) * decay ≈ 10x → 1x
+    // 大碎片 (ratio≈1): boost ≈ 1 + (boostMax-1) * decay ≈ boostMax → 1x
     // 小碎片 (ratio≈0): boost ≈ 1（始终不变）
     const boost = 1 + (boostMax - 1) * decay * ratio;
 
@@ -159,11 +167,11 @@ export async function executeDraw(userId) {
 
   // 保底未触发则使用加权随机（碎片权重随抽奖次数动态调整）
   if (!selectedPrize) {
-    const [totalRow] = await query(
-      `SELECT COUNT(*) AS cnt FROM draw_records WHERE user_id = ?`,
-      [userId]
-    );
-    const adjustedPrizes = adjustFragmentWeights(availablePrizes, totalRow.cnt);
+    const [weightConfig, [totalRow]] = await Promise.all([
+      getFragmentWeightConfig(),
+      query(`SELECT COUNT(*) AS cnt FROM draw_records WHERE user_id = ?`, [userId]),
+    ]);
+    const adjustedPrizes = adjustFragmentWeights(availablePrizes, totalRow.cnt, weightConfig);
     selectedPrize = weightedRandom(adjustedPrizes);
   }
 
