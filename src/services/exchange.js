@@ -20,7 +20,7 @@ export async function getFragmentBalance(userId) {
  */
 export async function getActiveExchangeRewards() {
   return query(
-    `SELECT id, name, description, image_url, fragment_cost, stock, sort_order
+    `SELECT id, name, description, image_url, type, draws_quantity, fragment_cost, stock, sort_order
      FROM exchange_rewards
      WHERE is_active = 1
      ORDER BY sort_order`
@@ -82,6 +82,17 @@ export async function executeExchange(userId, rewardId) {
       [userId, rewardId, reward.fragment_cost]
     );
 
+    // 如果兑换的是抽奖次数，增加用户今日抽奖机会
+    if (reward.type === 'draws' && reward.draws_quantity > 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      await conn.execute(
+        `INSERT INTO user_daily_state (user_id, date, exchange_draws_earned)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE exchange_draws_earned = exchange_draws_earned + ?`,
+        [userId, today, reward.draws_quantity, reward.draws_quantity]
+      );
+    }
+
     await conn.commit();
 
     const newBalance = balance - reward.fragment_cost;
@@ -94,6 +105,8 @@ export async function executeExchange(userId, rewardId) {
           name: reward.name,
           description: reward.description,
           imageUrl: reward.image_url,
+          type: reward.type,
+          drawsQuantity: reward.type === 'draws' ? reward.draws_quantity : undefined,
           fragmentCost: reward.fragment_cost,
         },
         fragmentBalance: newBalance,
@@ -116,7 +129,7 @@ export async function getExchangeRecords(userId) {
   return query(
     `SELECT er.id, er.fragment_cost, er.created_at,
             ew.name AS reward_name, ew.description AS reward_description,
-            ew.image_url AS reward_image_url
+            ew.image_url AS reward_image_url, ew.type AS reward_type, ew.draws_quantity AS reward_draws_quantity
      FROM exchange_records er
      JOIN exchange_rewards ew ON ew.id = er.reward_id
      WHERE er.user_id = ?

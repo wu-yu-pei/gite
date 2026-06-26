@@ -43,7 +43,7 @@ export async function getOrCreateDailyState(userId) {
  */
 export function getRemainingDraws(state) {
   const baseFree = 1;
-  const totalEarned = baseFree + state.ad_draws_earned + state.invite_draws_earned;
+  const totalEarned = baseFree + state.ad_draws_earned + state.invite_draws_earned + (state.exchange_draws_earned || 0);
   const used = state.free_draws_used;
   return Math.max(0, totalEarned - used);
 }
