@@ -172,6 +172,20 @@ export async function executeDraw(userId) {
       query(`SELECT COUNT(*) AS cnt FROM draw_records WHERE user_id = ?`, [userId]),
     ]);
     const adjustedPrizes = adjustFragmentWeights(availablePrizes, totalRow.cnt, weightConfig);
+
+    // 输出当前用户抽奖概率到日志
+    const totalWeight = adjustedPrizes.reduce((sum, p) => sum + p.weight, 0);
+    logger.info({
+      userId,
+      totalDraws: totalRow.cnt,
+      probabilities: adjustedPrizes.map(p => ({
+        name: p.name,
+        type: p.type,
+        weight: p.weight,
+        probability: `${(p.weight / totalWeight * 100).toFixed(2)}%`,
+      })),
+    }, '抽奖概率分布');
+
     selectedPrize = weightedRandom(adjustedPrizes);
   }
 
