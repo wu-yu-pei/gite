@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS task_configs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  task_key VARCHAR(50) NOT NULL UNIQUE COMMENT '任务标识：ad, invite',
+  is_visible TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否在前端显示',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO task_configs (task_key, is_visible) VALUES
+('ad', 1),
+('invite', 1);

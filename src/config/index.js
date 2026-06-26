@@ -36,6 +36,11 @@ const config = {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
+
+  invite: {
+    signKey: process.env.INVITE_SIGN_KEY || 'default-invite-sign-key-change-in-prod',
+    maxAge: 300, // 签名有效期 5 分钟（秒）
+  },
 };
 
 export default config;
