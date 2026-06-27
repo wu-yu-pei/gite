@@ -95,7 +95,7 @@ export async function executeExchange(userId, rewardId) {
 
     // 如果兑换的是抽奖次数，增加用户今日抽奖机会
     if (reward.type === 'draws' && reward.draws_quantity > 0) {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString('sv-SE');
       await conn.execute(
         `INSERT INTO user_daily_state (user_id, date, exchange_draws_earned)
          VALUES (?, ?, ?)

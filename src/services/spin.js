@@ -23,7 +23,7 @@ async function addFragments(conn, userId, quantity) {
  * @returns {Promise<object>} user_daily_state 行
  */
 export async function getOrCreateDailyState(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
 
   await query(
     `INSERT IGNORE INTO user_daily_state (user_id, date) VALUES (?, ?)`,
@@ -229,7 +229,7 @@ export async function executeDraw(userId) {
            total_draws = total_draws + 1,
            consecutive_losses = ?
        WHERE user_id = ? AND date = ?`,
-      [newConsecutiveLosses, userId, new Date().toISOString().slice(0, 10)]
+      [newConsecutiveLosses, userId, new Date().toLocaleDateString('sv-SE')]
     );
 
     // 如果中了碎片奖品，增加用户碎片数量

@@ -50,7 +50,7 @@ export async function recordInvitation(inviterId, inviteeId) {
     [inviterId, inviteeId]
   );
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const [countRow] = await query(
     `SELECT COUNT(*) AS cnt FROM invitations WHERE inviter_id = ? AND DATE(created_at) = ?`,
     [inviterId, today]
@@ -72,7 +72,7 @@ export async function recordInvitation(inviterId, inviteeId) {
  * 获取用户今日邀请人数。
  */
 export async function getTodayInviteCount(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const [row] = await query(
     `SELECT COUNT(*) AS cnt FROM invitations WHERE inviter_id = ? AND DATE(created_at) = ?`,
     [userId, today]
