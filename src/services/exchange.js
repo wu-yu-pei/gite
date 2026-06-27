@@ -25,7 +25,7 @@ export async function getActiveExchangeRewardsByCategory() {
   );
 
   const rewards = await query(
-    `SELECT id, category_id, name, description, image_url, type, draws_quantity, min_draws, fragment_cost, stock, sort_order
+    `SELECT id, category_id, name, description, image_url, type, draws_quantity, min_draws, is_manual, fragment_cost, stock, sort_order
      FROM exchange_rewards
      WHERE is_active = 1 AND category_id IS NOT NULL
      ORDER BY sort_order`
@@ -109,9 +109,10 @@ export async function executeExchange(userId, rewardId) {
       }
     }
 
+    const fulfillmentStatus = reward.is_manual ? 'pending' : 'completed';
     await conn.execute(
-      `INSERT INTO exchange_records (user_id, reward_id, fragment_cost) VALUES (?, ?, ?)`,
-      [userId, rewardId, reward.fragment_cost]
+      `INSERT INTO exchange_records (user_id, reward_id, fragment_cost, fulfillment_status) VALUES (?, ?, ?, ?)`,
+      [userId, rewardId, reward.fragment_cost, fulfillmentStatus]
     );
 
     // 如果兑换的是抽奖次数，增加用户今日抽奖机会
@@ -140,7 +141,9 @@ export async function executeExchange(userId, rewardId) {
           type: reward.type,
           drawsQuantity: reward.type === 'draws' ? reward.draws_quantity : undefined,
           fragmentCost: reward.fragment_cost,
+          isManual: !!reward.is_manual,
         },
+        fulfillmentStatus: fulfillmentStatus,
         fragmentBalance: newBalance,
       },
     };
@@ -159,9 +162,10 @@ export async function executeExchange(userId, rewardId) {
  */
 export async function getExchangeRecords(userId) {
   return query(
-    `SELECT er.id, er.fragment_cost, er.created_at,
+    `SELECT er.id, er.fragment_cost, er.fulfillment_status, er.created_at,
             ew.name AS reward_name, ew.description AS reward_description,
-            ew.image_url AS reward_image_url, ew.type AS reward_type, ew.draws_quantity AS reward_draws_quantity
+            ew.image_url AS reward_image_url, ew.type AS reward_type, ew.draws_quantity AS reward_draws_quantity,
+            ew.is_manual AS reward_is_manual
      FROM exchange_records er
      JOIN exchange_rewards ew ON ew.id = er.reward_id
      WHERE er.user_id = ?

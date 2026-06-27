@@ -36,6 +36,7 @@ router.get('/api/exchange/home', optionalAuth, async (req, res) => {
           type: r.type,
           drawsQuantity: r.type === 'draws' ? r.draws_quantity : undefined,
           minDraws: r.min_draws,
+          isManual: !!r.is_manual,
           fragmentCost: r.fragment_cost,
           stock: r.stock,
           sortOrder: r.sort_order,
@@ -82,8 +83,10 @@ router.get('/api/exchange/records', auth, async (req, res) => {
         imageUrl: r.reward_image_url,
         type: r.reward_type,
         drawsQuantity: r.reward_type === 'draws' ? r.reward_draws_quantity : undefined,
+        isManual: !!r.reward_is_manual,
       },
       fragmentCost: r.fragment_cost,
+      fulfillmentStatus: r.fulfillment_status,
       createdAt: r.created_at,
     })),
   });
