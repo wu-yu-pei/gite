@@ -16,15 +16,36 @@ export async function getFragmentBalance(userId) {
 }
 
 /**
- * 获取所有启用的兑换奖励列表（用于前端展示）。
+ * 获取所有启用的兑换奖励，按分类分组返回。
+ * 只返回启用的分类，且分类下至少有一个启用的商品。
  */
-export async function getActiveExchangeRewards() {
-  return query(
-    `SELECT id, name, description, image_url, type, draws_quantity, min_draws, fragment_cost, stock, sort_order
+export async function getActiveExchangeRewardsByCategory() {
+  const categories = await query(
+    `SELECT id, name FROM exchange_categories WHERE is_active = 1 ORDER BY sort_order`
+  );
+
+  const rewards = await query(
+    `SELECT id, category_id, name, description, image_url, type, draws_quantity, min_draws, fragment_cost, stock, sort_order
      FROM exchange_rewards
-     WHERE is_active = 1
+     WHERE is_active = 1 AND category_id IS NOT NULL
      ORDER BY sort_order`
   );
+
+  const rewardsByCategory = new Map();
+  for (const r of rewards) {
+    if (!rewardsByCategory.has(r.category_id)) {
+      rewardsByCategory.set(r.category_id, []);
+    }
+    rewardsByCategory.get(r.category_id).push(r);
+  }
+
+  return categories
+    .filter(c => rewardsByCategory.has(c.id))
+    .map(c => ({
+      id: c.id,
+      name: c.name,
+      rewards: rewardsByCategory.get(c.id),
+    }));
 }
 
 /**
