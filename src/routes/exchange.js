@@ -2,7 +2,7 @@ import { Router } from 'express';
 import auth, { optionalAuth } from '../middlewares/auth.js';
 import {
   getFragmentBalance,
-  getActiveExchangeRewards,
+  getActiveExchangeRewardsByCategory,
   executeExchange,
   getExchangeRecords,
 } from '../services/exchange.js';
@@ -16,26 +16,31 @@ const router = Router();
 router.get('/api/exchange/home', optionalAuth, async (req, res) => {
   const userId = req.user?.userId;
 
-  const [balance, rewards] = await Promise.all([
+  const [balance, categories] = await Promise.all([
     userId ? getFragmentBalance(userId) : Promise.resolve(0),
-    getActiveExchangeRewards(),
+    getActiveExchangeRewardsByCategory(),
   ]);
 
   res.json({
     success: true,
     data: {
       fragmentBalance: balance,
-      rewards: rewards.map(r => ({
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        imageUrl: r.image_url,
-        type: r.type,
-        drawsQuantity: r.type === 'draws' ? r.draws_quantity : undefined,
-        minDraws: r.min_draws,
-        fragmentCost: r.fragment_cost,
-        stock: r.stock,
-        sortOrder: r.sort_order,
+      categories: categories.map(c => ({
+        id: c.id,
+        name: c.name,
+        rewards: c.rewards.map(r => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          imageUrl: r.image_url,
+          type: r.type,
+          drawsQuantity: r.type === 'draws' ? r.draws_quantity : undefined,
+          minDraws: r.min_draws,
+          isManual: !!r.is_manual,
+          fragmentCost: r.fragment_cost,
+          stock: r.stock,
+          sortOrder: r.sort_order,
+        })),
       })),
     },
   });
@@ -78,8 +83,10 @@ router.get('/api/exchange/records', auth, async (req, res) => {
         imageUrl: r.reward_image_url,
         type: r.reward_type,
         drawsQuantity: r.reward_type === 'draws' ? r.reward_draws_quantity : undefined,
+        isManual: !!r.reward_is_manual,
       },
       fragmentCost: r.fragment_cost,
+      fulfillmentStatus: r.fulfillment_status,
       createdAt: r.created_at,
     })),
   });
